@@ -37,10 +37,10 @@
 
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <button class="btn primary" id="btn-add">添加任务</button>
-      <button class="btn ghost" id="btn-archive">归档</button>
+      <button class="btn primary" onclick="openAddTask()">添加任务</button>
+      <button class="btn ghost" onclick="openArchive()">归档</button>
       <button class="btn ghost" onclick="window.location.href='birthday.html'">生日</button>
-      <button class="btn ghost" id="btn-sync">同步</button>
+      <button class="btn ghost" onclick="configureSync()">同步</button>
     </div>
 
     <!-- 同步提示 -->
@@ -65,7 +65,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 id="modal-title">添加任务</h2>
-        <button class="modal-close" id="modal-close">&times;</button>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <form id="task-form">
         <div class="form-group">
@@ -102,7 +102,7 @@
         </div>
         <input type="hidden" id="task-id">
         <div class="form-actions">
-          <button type="button" class="btn ghost" id="btn-cancel">取消</button>
+          <button type="button" class="btn ghost" onclick="closeModal()">取消</button>
           <button type="submit" class="btn primary">保存</button>
         </div>
       </form>
@@ -114,12 +114,12 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>已归档任务</h2>
-        <button class="modal-close" id="archive-close">&times;</button>
+        <button class="modal-close" onclick="closeArchive()">&times;</button>
       </div>
       <div class="archive-list" id="archive-list"></div>
     </div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

@@ -12,7 +12,6 @@ const state = {
 async function init() {
   loadFromStorage();
   
-  // 如果已配置 token，自动同步
   if (state.githubToken) {
     await syncFromCloud();
   }
@@ -20,7 +19,6 @@ async function init() {
   renderAll();
   bindEvents();
   
-  // 每3分钟自动同步
   if (state.githubToken) {
     setInterval(() => {
       syncToCloud();
@@ -28,7 +26,6 @@ async function init() {
   }
 }
 
-// 加载本地数据
 function loadFromStorage() {
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -43,7 +40,6 @@ function loadFromStorage() {
   }
 }
 
-// 保存到本地
 function saveToStorage() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     tasks: state.tasks,
@@ -54,14 +50,12 @@ function saveToStorage() {
   }));
 }
 
-// 渲染所有
 function renderAll() {
   renderStats();
   renderTaskList();
   updateSyncStatus();
 }
 
-// 更新同步状态显示
 function updateSyncStatus() {
   const syncBtn = document.getElementById('btn-sync');
   if (syncBtn) {
@@ -75,17 +69,13 @@ function updateSyncStatus() {
   }
 }
 
-// 从云端同步
 async function syncFromCloud() {
-  if (!state.githubToken) {
-    return;
-  }
+  if (!state.githubToken) return;
   
   try {
-    // 获取或创建 Gist
     if (!state.gistId) {
       await createGist();
-      if (!state.gistId) return; // 创建失败
+      if (!state.gistId) return;
     }
     
     const response = await fetch(\`https://api.github.com/gists/\${state.gistId}\`, {
@@ -99,35 +89,27 @@ async function syncFromCloud() {
       const gist = await response.json();
       const cloudData = JSON.parse(gist.files['laohu-todo-data.json'].content);
       
-      // 合并数据（使用最新的更新时间）
       const localUpdate = localStorage.getItem(STORAGE_KEY) ? 
         JSON.parse(localStorage.getItem(STORAGE_KEY)).lastUpdate : '1970-01-01';
       const cloudUpdate = cloudData.lastUpdate || '1970-01-01';
       
       if (cloudUpdate > localUpdate) {
-        // 云端更新，使用云端数据
         state.tasks = cloudData.tasks || [];
         state.archivedTasks = cloudData.archivedTasks || [];
         saveToStorage();
         renderAll();
         console.log('从云端同步成功');
       } else {
-        // 本地更新，上传到云端
         await syncToCloud();
       }
-    } else {
-      console.error('同步失败', response.status);
     }
   } catch (e) {
     console.error('从云端同步失败', e);
   }
 }
 
-// 同步到云端
 async function syncToCloud() {
-  if (!state.githubToken || !state.gistId) {
-    return;
-  }
+  if (!state.githubToken || !state.gistId) return;
   
   try {
     const data = {
@@ -154,15 +136,12 @@ async function syncToCloud() {
     
     if (response.ok) {
       console.log('已同步到云端');
-    } else {
-      console.error('同步到云端失败', response.status);
     }
   } catch (e) {
     console.error('同步到云端失败', e);
   }
 }
 
-// 创建 Gist
 async function createGist() {
   try {
     const data = {
@@ -197,51 +176,29 @@ async function createGist() {
       return true;
     } else {
       const error = await response.json();
-      console.error('创建 Gist 失败', error);
-      let errorMsg = 'Token 权限不足或无效';
-      if (error.message) {
-        errorMsg = error.message;
-      }
-      alert('配置失败：' + errorMsg + '\n\n请检查：\n1. Token 是否正确\n2. 是否勾选了 gist 权限');
+      alert('配置失败：' + (error.message || 'Token 权限不足或无效'));
       return false;
     }
   } catch (e) {
-    console.error('创建 Gist 失败', e);
     alert('网络错误，请检查网络连接');
     return false;
   }
 }
 
-// 配置同步
 async function configureSync() {
-  const currentToken = state.githubToken;
-  const hasToken = currentToken && currentToken.length > 0;
+  const hasToken = state.githubToken && state.githubToken.length > 0;
   
   let message = '';
   if (hasToken) {
-    message = \`当前已配置 GitHub Token\n\n\`;
-    message += \`您的 Gist ID：\${state.gistId || '未创建'}\n\n\`;
-    message += \`1. 点击"确定"重新配置\n\`;
-    message += \`2. 点击"取消"保持不变\n\n\`;
-    message += \`如需在另一台设备同步，请使用相同的 Token 和 Gist ID\`;
+    message = \`当前已配置 GitHub Token\n\n您的 Gist ID：\${state.gistId || '未创建'}\n\n1. 点击"确定"重新配置\n2. 点击"取消"保持不变\n\n如需在另一台设备同步，请使用相同的 Token 和 Gist ID\`;
   } else {
-    message = \`请输入您的 GitHub Personal Access Token\n\n\`;
-    message += \`获取步骤：\n\`;
-    message += \`1. 访问 https://github.com/settings/tokens\n\`;
-    message += \`2. 点击 "Generate new token (classic)"\n\`;
-    message += \`3. 填写：\n\`;
-    message += \`   - Note: 老胡任务清单\n\`;
-    message += \`   - Expiration: No expiration\n\`;
-    message += \`   - 勾选 gist 权限\n\`;
-    message += \`4. 点击 "Generate token"\n\`;
-    message += \`5. 复制生成的 token（只显示一次）\`;
+    message = \`请输入您的 GitHub Personal Access Token\n\n获取步骤：\n1. 访问 https://github.com/settings/tokens\n2. 点击 "Generate new token (classic)"\n3. 填写：\n   - Note: 老胡任务清单\n   - Expiration: No expiration\n   - 勾选 gist 权限\n4. 点击 "Generate token"\n5. 复制生成的 token（只显示一次）\`;
   }
   
   const token = prompt(message);
   
   if (token !== null) {
     if (token.trim() === '') {
-      // 清除配置
       if (confirm('确定要清除 GitHub 同步配置吗？\n\n（本地数据不会丢失）')) {
         state.githubToken = null;
         state.gistId = null;
@@ -250,11 +207,9 @@ async function configureSync() {
         alert('已清除同步配置');
       }
     } else {
-      // 保存 Token
       state.githubToken = token.trim();
       saveToStorage();
       
-      // 询问是否有已有的 Gist ID
       const existingGistId = prompt(
         '请输入 Gist ID（可选）\n\n' +
         '如果这是第二台设备，请输入第一台设备显示的 Gist ID\n' +
@@ -263,16 +218,12 @@ async function configureSync() {
       );
       
       if (existingGistId && existingGistId.trim()) {
-        // 使用已有的 Gist ID
         state.gistId = existingGistId.trim();
         saveToStorage();
-        
-        // 从云端拉取数据
         await syncFromCloud();
         alert('配置成功！\n\n已连接到现有数据，现在可以跨平台同步了');
         renderAll();
       } else {
-        // 创建新的 Gist
         const success = await createGist();
         if (success) {
           alert(
@@ -288,7 +239,6 @@ async function configureSync() {
   }
 }
 
-// 渲染统计
 function renderStats() {
   const counts = { A1: 0, A2: 0, B1: 0, C: 0 };
   state.tasks.filter(t => !t.completed).forEach(t => {
@@ -303,7 +253,6 @@ function renderStats() {
   document.getElementById('stat-c').textContent = counts.C;
 }
 
-// 渲染任务列表
 function renderTaskList() {
   const taskList = document.getElementById('task-list');
   const emptyState = document.getElementById('empty-state');
@@ -318,7 +267,6 @@ function renderTaskList() {
   
   emptyState.style.display = 'none';
   
-  // 按优先级排序
   const priorityOrder = { A1: 0, A2: 1, B1: 2, C: 3 };
   const sortedTasks = [...activeTasks].sort((a, b) => {
     return (priorityOrder[a.priority] || 4) - (priorityOrder[b.priority] || 4);
@@ -332,14 +280,14 @@ function renderTaskList() {
           <div class="task-meta">
             <span class="task-tag priority \${task.priority.toLowerCase()}">\${task.priority}</span>
             <span class="task-tag type">\${escapeHtml(task.type)}</span>
-            \${task.deadline ? \`<span class="task-deadline">📅 \${formatDate(task.deadline)}</span>\` : ''}
+            \${task.deadline ? \`<span class="task-deadline">日期: \${formatDate(task.deadline)}</span>\` : ''}
           </div>
           \${task.note ? \`<div class="task-note">\${escapeHtml(task.note)}</div>\` : ''}
         </div>
       </div>
       <div class="task-actions">
-        <button onclick="markAsCompleted('\${task.id}')" style="background:#27ae60;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">✓ 已执行</button>
-        <button onclick="markAsNotCompleted('\${task.id}')" style="background:#95a5a6;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">○ 未执行</button>
+        <button onclick="markAsCompleted('\${task.id}')" style="background:#27ae60;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">已完成</button>
+        <button onclick="markAsNotCompleted('\${task.id}')" style="background:#95a5a6;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">未执行</button>
         <button onclick="editTask('\${task.id}')" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:white;">编辑</button>
         <button onclick="deleteTask('\${task.id}')" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:white;">删除</button>
       </div>
@@ -347,7 +295,6 @@ function renderTaskList() {
   \`).join('');
 }
 
-// 渲染归档列表
 function renderArchiveList() {
   const archiveList = document.getElementById('archive-list');
   
@@ -358,13 +305,12 @@ function renderArchiveList() {
   
   archiveList.innerHTML = state.archivedTasks.map(task => \`
     <div class="archive-item">
-      <div class="task-name">\${escapeHtml(task.name)}</div>
+      <div class="task-name">[完成] \${escapeHtml(task.name)}</div>
       <div class="archive-id">归档编号: \${task.archiveId} | \${task.priority} | \${task.type} | \${formatDate(task.archivedAt)}</div>
     </div>
   \`).join('');
 }
 
-// 工具函数
 function escapeHtml(text) {
   if (!text) return '';
   const div = document.createElement('div');
@@ -395,7 +341,34 @@ function generateArchiveId() {
   return \`\${y}\${m}\${d}\${seq}\`;
 }
 
-// 添加任务
+// 按钮事件函数（全局）
+function openAddTask() {
+  state.editingId = null;
+  document.getElementById('modal-title').textContent = '添加任务';
+  openModal();
+}
+
+function openArchive() {
+  renderArchiveList();
+  document.getElementById('archive-modal').classList.add('show');
+}
+
+function openModal() {
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  document.getElementById('task-form').reset();
+  document.getElementById('task-id').value = '';
+  document.getElementById('modal-title').textContent = '添加任务';
+  state.editingId = null;
+}
+
+function closeArchive() {
+  document.getElementById('archive-modal').classList.remove('show');
+}
+
 function addTask(taskData) {
   state.tasks.push({
     id: generateId(),
@@ -405,32 +378,29 @@ function addTask(taskData) {
     createdAt: new Date().toISOString()
   });
   saveToStorage();
-  syncToCloud(); // 自动同步
+  syncToCloud();
   renderAll();
 }
 
-// 更新任务
 function updateTask(id, taskData) {
   const index = state.tasks.findIndex(t => t.id === id);
   if (index !== -1) {
     state.tasks[index] = { ...state.tasks[index], ...taskData };
     saveToStorage();
-    syncToCloud(); // 自动同步
+    syncToCloud();
     renderAll();
   }
 }
 
-// 删除任务
 function deleteTask(id) {
   if (confirm('确定要删除这个任务吗？')) {
     state.tasks = state.tasks.filter(t => t.id !== id);
     saveToStorage();
-    syncToCloud(); // 自动同步
+    syncToCloud();
     renderAll();
   }
 }
 
-// 标记为已执行（自动归档）
 function markAsCompleted(id) {
   const task = state.tasks.find(t => t.id === id);
   if (task) {
@@ -441,25 +411,23 @@ function markAsCompleted(id) {
     state.archivedTasks.unshift(task);
     state.tasks = state.tasks.filter(t => t.id !== id);
     saveToStorage();
-    syncToCloud(); // 自动同步
+    syncToCloud();
     renderAll();
     alert('任务已完成并归档！');
   }
 }
 
-// 标记为未执行
 function markAsNotCompleted(id) {
   const task = state.tasks.find(t => t.id === id);
   if (task) {
     task.status = '未执行';
     task.completed = false;
     saveToStorage();
-    syncToCloud(); // 自动同步
-    alert('⏳ 任务状态已更新为"未执行"');
+    syncToCloud();
+    alert('任务状态已更新为"未执行"');
   }
 }
 
-// 编辑任务
 function editTask(id) {
   const task = state.tasks.find(t => t.id === id);
   if (task) {
@@ -475,46 +443,7 @@ function editTask(id) {
   }
 }
 
-// 打开弹窗
-function openModal() {
-  document.getElementById('modal').classList.add('show');
-}
-
-// 关闭弹窗
-function closeModal() {
-  document.getElementById('modal').classList.remove('show');
-  document.getElementById('task-form').reset();
-  document.getElementById('task-id').value = '';
-  document.getElementById('modal-title').textContent = '添加任务';
-  state.editingId = null;
-}
-
-// 绑定事件
 function bindEvents() {
-  // 添加任务按钮
-  document.getElementById('btn-add').addEventListener('click', () => {
-    state.editingId = null;
-    document.getElementById('modal-title').textContent = '添加任务';
-    openModal();
-  });
-  
-  // 归档按钮
-  document.getElementById('btn-archive').addEventListener('click', () => {
-    renderArchiveList();
-    document.getElementById('archive-modal').classList.add('show');
-  });
-  
-  // 同步按钮
-  document.getElementById('btn-sync').addEventListener('click', configureSync);
-  
-  // 关闭弹窗
-  document.getElementById('modal-close').addEventListener('click', closeModal);
-  document.getElementById('btn-cancel').addEventListener('click', closeModal);
-  document.getElementById('archive-close').addEventListener('click', () => {
-    document.getElementById('archive-modal').classList.remove('show');
-  });
-  
-  // 表单提交
   document.getElementById('task-form').addEventListener('submit', (e) => {
     e.preventDefault();
     
@@ -540,7 +469,6 @@ function bindEvents() {
     closeModal();
   });
   
-  // 点击弹窗外部关闭
   document.getElementById('modal').addEventListener('click', (e) => {
     if (e.target.id === 'modal') {
       closeModal();
@@ -549,10 +477,9 @@ function bindEvents() {
   
   document.getElementById('archive-modal').addEventListener('click', (e) => {
     if (e.target.id === 'archive-modal') {
-      document.getElementById('archive-modal').classList.remove('show');
+      closeArchive();
     }
   });
 }
 
-// 启动
 init();
