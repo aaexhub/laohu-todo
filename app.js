@@ -66,10 +66,10 @@ function updateSyncStatus() {
   const syncBtn = document.getElementById('btn-sync');
   if (syncBtn) {
     if (state.githubToken) {
-      syncBtn.textContent = '☁️ 已连接';
+      syncBtn.textContent = '已连接';
       syncBtn.style.background = 'rgba(39, 174, 96, 0.3)';
     } else {
-      syncBtn.textContent = '☁️ 同步';
+      syncBtn.textContent = '同步';
       syncBtn.style.background = 'rgba(255, 255, 255, 0.2)';
     }
   }
@@ -110,7 +110,7 @@ async function syncFromCloud() {
         state.archivedTasks = cloudData.archivedTasks || [];
         saveToStorage();
         renderAll();
-        console.log('✅ 从云端同步成功');
+        console.log('从云端同步成功');
       } else {
         // 本地更新，上传到云端
         await syncToCloud();
@@ -153,7 +153,7 @@ async function syncToCloud() {
     });
     
     if (response.ok) {
-      console.log('✅ 已同步到云端');
+      console.log('已同步到云端');
     } else {
       console.error('同步到云端失败', response.status);
     }
@@ -193,7 +193,7 @@ async function createGist() {
       const gist = await response.json();
       state.gistId = gist.id;
       saveToStorage();
-      console.log('✅ Gist 创建成功', state.gistId);
+      console.log('Gist 创建成功', state.gistId);
       return true;
     } else {
       const error = await response.json();
@@ -202,12 +202,12 @@ async function createGist() {
       if (error.message) {
         errorMsg = error.message;
       }
-      alert('❌ 配置失败：' + errorMsg + '\n\n请检查：\n1. Token 是否正确\n2. 是否勾选了 gist 权限');
+      alert('配置失败：' + errorMsg + '\n\n请检查：\n1. Token 是否正确\n2. 是否勾选了 gist 权限');
       return false;
     }
   } catch (e) {
     console.error('创建 Gist 失败', e);
-    alert('❌ 网络错误，请检查网络连接');
+    alert('网络错误，请检查网络连接');
     return false;
   }
 }
@@ -220,7 +220,7 @@ async function configureSync() {
   let message = '';
   if (hasToken) {
     message = \`当前已配置 GitHub Token\n\n\`;
-    message += \`📌 您的 Gist ID：\${state.gistId || '未创建'}\n\n\`;
+    message += \`您的 Gist ID：\${state.gistId || '未创建'}\n\n\`;
     message += \`1. 点击"确定"重新配置\n\`;
     message += \`2. 点击"取消"保持不变\n\n\`;
     message += \`如需在另一台设备同步，请使用相同的 Token 和 Gist ID\`;
@@ -232,7 +232,7 @@ async function configureSync() {
     message += \`3. 填写：\n\`;
     message += \`   - Note: 老胡任务清单\n\`;
     message += \`   - Expiration: No expiration\n\`;
-    message += \`   - ✅ 勾选 gist 权限\n\`;
+    message += \`   - 勾选 gist 权限\n\`;
     message += \`4. 点击 "Generate token"\n\`;
     message += \`5. 复制生成的 token（只显示一次）\`;
   }
@@ -247,7 +247,7 @@ async function configureSync() {
         state.gistId = null;
         saveToStorage();
         updateSyncStatus();
-        alert('✅ 已清除同步配置');
+        alert('已清除同步配置');
       }
     } else {
       // 保存 Token
@@ -257,8 +257,8 @@ async function configureSync() {
       // 询问是否有已有的 Gist ID
       const existingGistId = prompt(
         '请输入 Gist ID（可选）\n\n' +
-        '📌 如果这是第二台设备，请输入第一台设备显示的 Gist ID\n' +
-        '📌 如果是第一台设备，留空会自动创建新的\n\n' +
+        '如果这是第二台设备，请输入第一台设备显示的 Gist ID\n' +
+        '如果是第一台设备，留空会自动创建新的\n\n' +
         'Gist ID 格式类似：abc123def456...'
       );
       
@@ -269,16 +269,16 @@ async function configureSync() {
         
         // 从云端拉取数据
         await syncFromCloud();
-        alert('✅ 配置成功！\n\n已连接到现有数据，现在可以跨平台同步了');
+        alert('配置成功！\n\n已连接到现有数据，现在可以跨平台同步了');
         renderAll();
       } else {
         // 创建新的 Gist
         const success = await createGist();
         if (success) {
           alert(
-            '✅ 配置成功！\n\n' +
-            '📌 您的 Gist ID 是：\n' + state.gistId + '\n\n' +
-            '⚠️ 请保存这个 ID！\n' +
+            '配置成功！\n\n' +
+            '您的 Gist ID 是：\n' + state.gistId + '\n\n' +
+            '请保存这个 ID！\n' +
             '在其他设备上配置时输入相同的 Token 和这个 Gist ID 即可同步数据'
           );
         }
@@ -358,7 +358,7 @@ function renderArchiveList() {
   
   archiveList.innerHTML = state.archivedTasks.map(task => \`
     <div class="archive-item">
-      <div class="task-name">✅ \${escapeHtml(task.name)}</div>
+      <div class="task-name">\${escapeHtml(task.name)}</div>
       <div class="archive-id">归档编号: \${task.archiveId} | \${task.priority} | \${task.type} | \${formatDate(task.archivedAt)}</div>
     </div>
   \`).join('');
@@ -443,7 +443,7 @@ function markAsCompleted(id) {
     saveToStorage();
     syncToCloud(); // 自动同步
     renderAll();
-    alert('✅ 任务已完成并归档！');
+    alert('任务已完成并归档！');
   }
 }
 
