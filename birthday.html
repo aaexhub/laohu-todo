@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#667eea">
+  <title>生日提醒</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .birthday-card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .birthday-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .birthday-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+    }
+    .birthday-name {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .birthday-date {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .birthday-countdown {
+      text-align: right;
+    }
+    .countdown-days {
+      font-size: 24px;
+      font-weight: bold;
+      color: #e74c3c;
+    }
+    .countdown-label {
+      font-size: 12px;
+      color: #999;
+    }
+    .birthday-actions button {
+      margin-left: 8px;
+      padding: 6px 12px;
+      border: 1px solid #e1e8ed;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎂 生日提醒</h1>
+      <p>同事同学的生日，不再错过</p>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="action-bar">
+      <button class="btn primary" id="btn-add-birthday">+ 添加生日</button>
+      <button class="btn ghost" onclick="window.location.href='index.html'">📋 任务清单</button>
+    </div>
+
+    <!-- 本月生日 -->
+    <h3 style="color:white;margin:20px 0 10px;">🎉 本月生日</h3>
+    <div id="this-month-birthdays"></div>
+
+    <!-- 即将到来 -->
+    <h3 style="color:white;margin:20px 0 10px;">📅 即将到来</h3>
+    <div id="upcoming-birthdays"></div>
+
+    <!-- 所有生日 -->
+    <h3 style="color:white;margin:20px 0 10px;">👥 所有联系人</h3>
+    <div id="all-birthdays"></div>
+  </div>
+
+  <!-- 添加生日弹窗 -->
+  <div class="modal" id="birthday-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">添加生日</h2>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <form id="birthday-form">
+        <div class="form-group">
+          <label>姓名 *</label>
+          <input type="text" id="birthday-name" placeholder="输入姓名..." required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>生日日期 *</label>
+            <input type="date" id="birthday-date" required>
+          </div>
+          <div class="form-group">
+            <label>关系</label>
+            <select id="birthday-relation">
+              <option value="同事">同事</option>
+              <option value="同学">同学</option>
+              <option value="朋友">朋友</option>
+              <option value="家人">家人</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" id="birthday-email" placeholder="用于发送生日邮件...">
+        </div>
+        <div class="form-group">
+          <label>备注</label>
+          <textarea id="birthday-note" rows="2" placeholder="补充说明..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="birthday-reminder" checked>
+            提前几天提醒（默认3天）
+          </label>
+        </div>
+        <input type="hidden" id="birthday-id">
+        <div class="form-actions">
+          <button type="button" class="btn ghost" id="btn-cancel">取消</button>
+          <button type="submit" class="btn primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="birthday.js"></script>
+</body>
+</html>
