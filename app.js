@@ -69,6 +69,33 @@ function updateSyncStatus() {
   }
 }
 
+// 合并两个任务列表（根据 ID 去重，保留最新的）
+function mergeTasks(localTasks, cloudTasks) {
+  const taskMap = new Map();
+  
+  // 先添加本地任务
+  localTasks.forEach(task => {
+    taskMap.set(task.id, task);
+  });
+  
+  // 再用云端任务更新（如果有相同 ID，保留更新时间最新的）
+  cloudTasks.forEach(task => {
+    const existing = taskMap.get(task.id);
+    if (!existing) {
+      taskMap.set(task.id, task);
+    } else {
+      // 比较更新时间，保留最新的
+      const existingTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+      const cloudTime = new Date(task.updatedAt || task.createdAt || 0).getTime();
+      if (cloudTime > existingTime) {
+        taskMap.set(task.id, task);
+      }
+    }
+  });
+  
+  return Array.from(taskMap.values());
+}
+
 async function syncFromCloud() {
   if (!state.githubToken) return;
   
@@ -89,19 +116,17 @@ async function syncFromCloud() {
       const gist = await response.json();
       const cloudData = JSON.parse(gist.files['laohu-todo-data.json'].content);
       
-      const localUpdate = localStorage.getItem(STORAGE_KEY) ? 
-        JSON.parse(localStorage.getItem(STORAGE_KEY)).lastUpdate : '1970-01-01';
-      const cloudUpdate = cloudData.lastUpdate || '1970-01-01';
+      // 合并数据而不是覆盖
+      state.tasks = mergeTasks(state.tasks, cloudData.tasks || []);
+      state.archivedTasks = mergeTasks(state.archivedTasks, cloudData.archivedTasks || []);
       
-      if (cloudUpdate > localUpdate) {
-        state.tasks = cloudData.tasks || [];
-        state.archivedTasks = cloudData.archivedTasks || [];
-        saveToStorage();
-        renderAll();
-        console.log('从云端同步成功');
-      } else {
-        await syncToCloud();
-      }
+      saveToStorage();
+      renderAll();
+      
+      // 合并后立即上传到云端
+      await syncToCloud();
+      
+      console.log('数据合并同步成功');
     }
   } catch (e) {
     console.error('从云端同步失败', e);
@@ -267,9 +292,11 @@ function renderTaskList() {
   
   emptyState.style.display = 'none';
   
-  const priorityOrder = { A1: 0, A2: 1, B1: 2, C: 3 };
+  // 按创建时间倒序排列（最新的在前）
   const sortedTasks = [...activeTasks].sort((a, b) => {
-    return (priorityOrder[a.priority] || 4) - (priorityOrder[b.priority] || 4);
+    const timeA = new Date(a.createdAt || 0).getTime();
+    const timeB = new Date(b.createdAt || 0).getTime();
+    return timeB - timeA; // 倒序
   });
   
   taskList.innerHTML = sortedTasks.map(task => `
@@ -303,7 +330,14 @@ function renderArchiveList() {
     return;
   }
   
-  archiveList.innerHTML = state.archivedTasks.map(task => `
+  // 按归档时间倒序排列
+  const sortedArchive = [...state.archivedTasks].sort((a, b) => {
+    const timeA = new Date(a.archivedAt || 0).getTime();
+    const timeB = new Date(b.archivedAt || 0).getTime();
+    return timeB - timeA;
+  });
+  
+  archiveList.innerHTML = sortedArchive.map(task => `
     <div class="archive-item">
       <div class="task-name">[完成] ${escapeHtml(task.name)}</div>
       <div class="archive-id">归档编号: ${task.archiveId} | ${task.priority} | ${task.type} | ${formatDate(task.archivedAt)}</div>
@@ -375,7 +409,8 @@ function addTask(taskData) {
     ...taskData,
     completed: false,
     status: '未执行',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   });
   saveToStorage();
   syncToCloud();
@@ -385,7 +420,11 @@ function addTask(taskData) {
 function updateTask(id, taskData) {
   const index = state.tasks.findIndex(t => t.id === id);
   if (index !== -1) {
-    state.tasks[index] = { ...state.tasks[index], ...taskData };
+    state.tasks[index] = { 
+      ...state.tasks[index], 
+      ...taskData, 
+      updatedAt: new Date().toISOString() 
+    };
     saveToStorage();
     syncToCloud();
     renderAll();
@@ -408,6 +447,7 @@ function markAsCompleted(id) {
     task.status = '已执行';
     task.archiveId = generateArchiveId();
     task.archivedAt = new Date().toISOString();
+    task.updatedAt = new Date().toISOString();
     state.archivedTasks.unshift(task);
     state.tasks = state.tasks.filter(t => t.id !== id);
     saveToStorage();
@@ -422,6 +462,7 @@ function markAsNotCompleted(id) {
   if (task) {
     task.status = '未执行';
     task.completed = false;
+    task.updatedAt = new Date().toISOString();
     saveToStorage();
     syncToCloud();
     alert('任务状态已更新为"未执行"');
