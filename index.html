@@ -40,7 +40,15 @@
       <button class="btn primary" id="btn-add">+ 添加任务</button>
       <button class="btn ghost" id="btn-archive">📦 归档</button>
       <button class="btn ghost" onclick="window.location.href='birthday.html'">🎂 生日</button>
-      <button class="btn ghost" onclick="configureSync()">☁️ 同步</button>
+      <button class="btn ghost" onclick="exportData()">📤 导出</button>
+      <button class="btn ghost" onclick="importData()">📥 导入</button>
+    </div>
+
+    <!-- 提示信息 -->
+    <div style="background:rgba(255,255,255,0.1);padding:10px;border-radius:8px;margin-bottom:15px;color:white;font-size:13px;">
+      💡 <strong>跨平台同步方法：</strong>
+      <br>1. 点击「📤 导出」保存数据文件到云盘（iCloud/百度网盘等）
+      <br>2. 在其他设备上从云盘下载文件，点击「📥 导入」即可
     </div>
 
     <!-- 空状态 -->

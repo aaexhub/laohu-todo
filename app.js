@@ -1,22 +1,16 @@
 const STORAGE_KEY = "laoHuTaskListV1";
-const SYNC_KEY = "laoHuTaskListSyncV1";
 
 const state = {
   tasks: [],
   archivedTasks: [],
-  editingId: null,
-  syncToken: null // 用于 GitHub 同步
+  editingId: null
 };
 
 // 初始化
-async function init() {
+function init() {
   loadFromStorage();
-  await syncFromCloud(); // 从云端同步
   renderAll();
   bindEvents();
-  
-  // 定期同步（每5分钟）
-  setInterval(syncToCloud, 5 * 60 * 1000);
 }
 
 // 加载本地数据
@@ -26,7 +20,6 @@ function loadFromStorage() {
     if (data) {
       state.tasks = data.tasks || [];
       state.archivedTasks = data.archivedTasks || [];
-      state.syncToken = data.syncToken;
     }
   } catch (e) {
     console.error('加载数据失败', e);
@@ -38,119 +31,8 @@ function saveToStorage() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     tasks: state.tasks,
     archivedTasks: state.archivedTasks,
-    syncToken: state.syncToken,
-    lastSync: new Date().toISOString()
+    lastUpdate: new Date().toISOString()
   }));
-}
-
-// 从云端同步
-async function syncFromCloud() {
-  try {
-    // 使用 GitHub Gist 同步
-    const gistId = await getOrCreateGist();
-    if (!gistId) return;
-    
-    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
-      headers: {
-        'Authorization': `token ${getGitHubToken()}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    });
-    
-    if (response.ok) {
-      const gist = await response.json();
-      const cloudData = JSON.parse(gist.files['todo-data.json'].content);
-      
-      // 合并数据（云端优先）
-      if (cloudData && cloudData.lastSync > (localStorage.getItem('lastSync') || '0')) {
-        state.tasks = cloudData.tasks || [];
-        state.archivedTasks = cloudData.archivedTasks || [];
-        saveToStorage();
-        renderAll();
-        console.log('✅ 从云端同步成功');
-      }
-    }
-  } catch (e) {
-    console.log('云同步失败，使用本地数据', e);
-  }
-}
-
-// 同步到云端
-async function syncToCloud() {
-  try {
-    const gistId = await getOrCreateGist();
-    if (!gistId) return;
-    
-    const data = {
-      tasks: state.tasks,
-      archivedTasks: state.archivedTasks,
-      lastSync: new Date().toISOString()
-    };
-    
-    await fetch(`https://api.github.com/gists/${gistId}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `token ${getGitHubToken()}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        files: {
-          'todo-data.json': {
-            content: JSON.stringify(data, null, 2)
-          }
-        }
-      })
-    });
-    
-    console.log('✅ 已同步到云端');
-  } catch (e) {
-    console.log('同步到云端失败', e);
-  }
-}
-
-// 获取或创建 Gist
-async function getOrCreateGist() {
-  let gistId = localStorage.getItem('gistId');
-  
-  if (!gistId) {
-    // 创建新 Gist
-    const response = await fetch('https://api.github.com/gists', {
-      method: 'POST',
-      headers: {
-        'Authorization': `token ${getGitHubToken()}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        description: '老胡任务清单数据',
-        public: false,
-        files: {
-          'todo-data.json': {
-            content: JSON.stringify({
-              tasks: [],
-              archivedTasks: [],
-              lastSync: new Date().toISOString()
-            }, null, 2)
-          }
-        }
-      })
-    });
-    
-    if (response.ok) {
-      const gist = await response.json();
-      gistId = gist.id;
-      localStorage.setItem('gistId', gistId);
-    }
-  }
-  
-  return gistId;
-}
-
-// 获取 GitHub Token（需要用户配置）
-function getGitHubToken() {
-  // 从 localStorage 获取用户配置的 token
-  return localStorage.getItem('githubToken') || '';
 }
 
 // 渲染所有
@@ -209,10 +91,10 @@ function renderTaskList() {
         </div>
       </div>
       <div class="task-actions">
-        <button onclick="markAsCompleted('${task.id}')" style="background:#27ae60;color:white;border:none;">✓ 已执行</button>
-        <button onclick="markAsNotCompleted('${task.id}')" style="background:#95a5a6;color:white;border:none;">○ 未执行</button>
-        <button onclick="editTask('${task.id}')">编辑</button>
-        <button onclick="deleteTask('${task.id}')">删除</button>
+        <button onclick="markAsCompleted('${task.id}')" style="background:#27ae60;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">✓ 已执行</button>
+        <button onclick="markAsNotCompleted('${task.id}')" style="background:#95a5a6;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">○ 未执行</button>
+        <button onclick="editTask('${task.id}')" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:white;">编辑</button>
+        <button onclick="deleteTask('${task.id}')" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:white;">删除</button>
       </div>
     </div>
   `).join('');
@@ -276,7 +158,6 @@ function addTask(taskData) {
     createdAt: new Date().toISOString()
   });
   saveToStorage();
-  syncToCloud(); // 同步到云端
   renderAll();
 }
 
@@ -286,7 +167,6 @@ function updateTask(id, taskData) {
   if (index !== -1) {
     state.tasks[index] = { ...state.tasks[index], ...taskData };
     saveToStorage();
-    syncToCloud(); // 同步到云端
     renderAll();
   }
 }
@@ -296,7 +176,6 @@ function deleteTask(id) {
   if (confirm('确定要删除这个任务吗？')) {
     state.tasks = state.tasks.filter(t => t.id !== id);
     saveToStorage();
-    syncToCloud(); // 同步到云端
     renderAll();
   }
 }
@@ -312,7 +191,6 @@ function markAsCompleted(id) {
     state.archivedTasks.unshift(task);
     state.tasks = state.tasks.filter(t => t.id !== id);
     saveToStorage();
-    syncToCloud(); // 同步到云端
     renderAll();
     alert('✅ 任务已完成并归档！');
   }
@@ -325,7 +203,6 @@ function markAsNotCompleted(id) {
     task.status = '未执行';
     task.completed = false;
     saveToStorage();
-    syncToCloud(); // 同步到云端
     alert('⏳ 任务状态已更新为"未执行"');
   }
 }
@@ -360,15 +237,55 @@ function closeModal() {
   state.editingId = null;
 }
 
-// 配置 GitHub Token
-function configureSync() {
-  const token = prompt('请输入您的 GitHub Personal Access Token（需要 gist 权限）：\n\n获取方式：\n1. 访问 https://github.com/settings/tokens\n2. 点击 "Generate new token (classic)"\n3. 勾选 "gist" 权限\n4. 生成并复制 token');
+// 导出数据
+function exportData() {
+  const data = {
+    tasks: state.tasks,
+    archivedTasks: state.archivedTasks,
+    exportTime: new Date().toISOString()
+  };
   
-  if (token) {
-    localStorage.setItem('githubToken', token);
-    alert('✅ 配置成功！现在可以跨平台同步了');
-    syncFromCloud();
-  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `老胡任务清单_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  alert('✅ 数据已导出！\n\n您可以将这个文件保存到云盘（iCloud/百度网盘等），在其他设备上导入即可。');
+}
+
+// 导入数据
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        
+        if (confirm(`确定要导入数据吗？\n\n待办任务: ${data.tasks?.length || 0} 个\n归档任务: ${data.archivedTasks?.length || 0} 个\n\n⚠️ 这将覆盖当前数据`)) {
+          state.tasks = data.tasks || [];
+          state.archivedTasks = data.archivedTasks || [];
+          saveToStorage();
+          renderAll();
+          alert('✅ 数据导入成功！');
+        }
+      } catch (error) {
+        alert('❌ 导入失败：文件格式不正确');
+      }
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  input.click();
 }
 
 // 绑定事件
