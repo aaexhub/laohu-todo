@@ -78,9 +78,9 @@ async function syncFromCloud() {
       if (!state.gistId) return;
     }
     
-    const response = await fetch(\`https://api.github.com/gists/\${state.gistId}\`, {
+    const response = await fetch(`https://api.github.com/gists/${state.gistId}`, {
       headers: {
-        'Authorization': \`token \${state.githubToken}\`,
+        'Authorization': `token ${state.githubToken}`,
         'Accept': 'application/vnd.github.v3+json'
       }
     });
@@ -118,10 +118,10 @@ async function syncToCloud() {
       lastUpdate: new Date().toISOString()
     };
     
-    const response = await fetch(\`https://api.github.com/gists/\${state.gistId}\`, {
+    const response = await fetch(`https://api.github.com/gists/${state.gistId}`, {
       method: 'PATCH',
       headers: {
-        'Authorization': \`token \${state.githubToken}\`,
+        'Authorization': `token ${state.githubToken}`,
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json'
       },
@@ -153,7 +153,7 @@ async function createGist() {
     const response = await fetch('https://api.github.com/gists', {
       method: 'POST',
       headers: {
-        'Authorization': \`token \${state.githubToken}\`,
+        'Authorization': `token ${state.githubToken}`,
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json'
       },
@@ -190,9 +190,9 @@ async function configureSync() {
   
   let message = '';
   if (hasToken) {
-    message = \`当前已配置 GitHub Token\n\n您的 Gist ID：\${state.gistId || '未创建'}\n\n1. 点击"确定"重新配置\n2. 点击"取消"保持不变\n\n如需在另一台设备同步，请使用相同的 Token 和 Gist ID\`;
+    message = `当前已配置 GitHub Token\n\n您的 Gist ID：${state.gistId || '未创建'}\n\n1. 点击"确定"重新配置\n2. 点击"取消"保持不变\n\n如需在另一台设备同步，请使用相同的 Token 和 Gist ID`;
   } else {
-    message = \`请输入您的 GitHub Personal Access Token\n\n获取步骤：\n1. 访问 https://github.com/settings/tokens\n2. 点击 "Generate new token (classic)"\n3. 填写：\n   - Note: 老胡任务清单\n   - Expiration: No expiration\n   - 勾选 gist 权限\n4. 点击 "Generate token"\n5. 复制生成的 token（只显示一次）\`;
+    message = `请输入您的 GitHub Personal Access Token\n\n获取步骤：\n1. 访问 https://github.com/settings/tokens\n2. 点击 "Generate new token (classic)"\n3. 填写：\n   - Note: 老胡任务清单\n   - Expiration: No expiration\n   - 勾选 gist 权限\n4. 点击 "Generate token"\n5. 复制生成的 token（只显示一次）`;
   }
   
   const token = prompt(message);
@@ -272,27 +272,27 @@ function renderTaskList() {
     return (priorityOrder[a.priority] || 4) - (priorityOrder[b.priority] || 4);
   });
   
-  taskList.innerHTML = sortedTasks.map(task => \`
-    <div class="task-card \${task.priority.toLowerCase()}" data-id="\${task.id}">
+  taskList.innerHTML = sortedTasks.map(task => `
+    <div class="task-card ${task.priority.toLowerCase()}" data-id="${task.id}">
       <div class="task-header">
         <div class="task-info">
-          <div class="task-name">\${escapeHtml(task.name)}</div>
+          <div class="task-name">${escapeHtml(task.name)}</div>
           <div class="task-meta">
-            <span class="task-tag priority \${task.priority.toLowerCase()}">\${task.priority}</span>
-            <span class="task-tag type">\${escapeHtml(task.type)}</span>
-            \${task.deadline ? \`<span class="task-deadline">日期: \${formatDate(task.deadline)}</span>\` : ''}
+            <span class="task-tag priority ${task.priority.toLowerCase()}">${task.priority}</span>
+            <span class="task-tag type">${escapeHtml(task.type)}</span>
+            ${task.deadline ? `<span class="task-deadline">日期: ${formatDate(task.deadline)}</span>` : ''}
           </div>
-          \${task.note ? \`<div class="task-note">\${escapeHtml(task.note)}</div>\` : ''}
+          ${task.note ? `<div class="task-note">${escapeHtml(task.note)}</div>` : ''}
         </div>
       </div>
       <div class="task-actions">
-        <button onclick="markAsCompleted('\${task.id}')" style="background:#27ae60;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">已完成</button>
-        <button onclick="markAsNotCompleted('\${task.id}')" style="background:#95a5a6;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">未执行</button>
-        <button onclick="editTask('\${task.id}')" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:white;">编辑</button>
-        <button onclick="deleteTask('\${task.id}')" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:white;">删除</button>
+        <button onclick="markAsCompleted('${task.id}')" style="background:#27ae60;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">已完成</button>
+        <button onclick="markAsNotCompleted('${task.id}')" style="background:#95a5a6;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">未执行</button>
+        <button onclick="editTask('${task.id}')" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:white;">编辑</button>
+        <button onclick="deleteTask('${task.id}')" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:white;">删除</button>
       </div>
     </div>
-  \`).join('');
+  `).join('');
 }
 
 function renderArchiveList() {
@@ -303,12 +303,12 @@ function renderArchiveList() {
     return;
   }
   
-  archiveList.innerHTML = state.archivedTasks.map(task => \`
+  archiveList.innerHTML = state.archivedTasks.map(task => `
     <div class="archive-item">
-      <div class="task-name">[完成] \${escapeHtml(task.name)}</div>
-      <div class="archive-id">归档编号: \${task.archiveId} | \${task.priority} | \${task.type} | \${formatDate(task.archivedAt)}</div>
+      <div class="task-name">[完成] ${escapeHtml(task.name)}</div>
+      <div class="archive-id">归档编号: ${task.archiveId} | ${task.priority} | ${task.type} | ${formatDate(task.archivedAt)}</div>
     </div>
-  \`).join('');
+  `).join('');
 }
 
 function escapeHtml(text) {
@@ -325,7 +325,7 @@ function formatDate(dateStr) {
   const day = date.getDate();
   const hour = String(date.getHours()).padStart(2, '0');
   const min = String(date.getMinutes()).padStart(2, '0');
-  return \`\${month}/\${day} \${hour}:\${min}\`;
+  return `${month}/${day} ${hour}:${min}`;
 }
 
 function generateId() {
@@ -338,7 +338,7 @@ function generateArchiveId() {
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
   const seq = String(state.archivedTasks.length + 1).padStart(3, '0');
-  return \`\${y}\${m}\${d}\${seq}\`;
+  return `${y}${m}${d}${seq}`;
 }
 
 // 按钮事件函数（全局）
