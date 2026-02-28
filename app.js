@@ -292,11 +292,11 @@ function renderTaskList() {
   
   emptyState.style.display = 'none';
   
-  // 按创建时间倒序排列（最新的在前）
+  // 按截止时间正序排列（最近的在前）
   const sortedTasks = [...activeTasks].sort((a, b) => {
-    const timeA = new Date(a.createdAt || 0).getTime();
-    const timeB = new Date(b.createdAt || 0).getTime();
-    return timeB - timeA; // 倒序
+    const timeA = new Date(a.deadline || a.createdAt || 0).getTime();
+    const timeB = new Date(b.deadline || b.createdAt || 0).getTime();
+    return timeA - timeB; // 正序（最近的在前）
   });
   
   taskList.innerHTML = sortedTasks.map(task => `
