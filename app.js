@@ -183,7 +183,7 @@ async function createGist() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        description: '老胡任务清单数据（自动同步）',
+        description: '老胡的任务清单数据（自动同步）',
         public: false,
         files: {
           'laohu-todo-data.json': {
