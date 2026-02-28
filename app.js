@@ -78,7 +78,6 @@ function updateSyncStatus() {
 // 从云端同步
 async function syncFromCloud() {
   if (!state.githubToken) {
-    alert('请先配置 GitHub Token');
     return;
   }
   
@@ -86,6 +85,7 @@ async function syncFromCloud() {
     // 获取或创建 Gist
     if (!state.gistId) {
       await createGist();
+      if (!state.gistId) return; // 创建失败
     }
     
     const response = await fetch(`https://api.github.com/gists/${state.gistId}`, {
@@ -194,18 +194,26 @@ async function createGist() {
       state.gistId = gist.id;
       saveToStorage();
       console.log('✅ Gist 创建成功', state.gistId);
+      return true;
     } else {
       const error = await response.json();
       console.error('创建 Gist 失败', error);
-      alert('创建同步失败：' + (error.message || 'Token 权限不足'));
+      let errorMsg = 'Token 权限不足或无效';
+      if (error.message) {
+        errorMsg = error.message;
+      }
+      alert('❌ 配置失败：' + errorMsg + '\n\n请检查：\n1. Token 是否正确\n2. 是否勾选了 gist 权限');
+      return false;
     }
   } catch (e) {
     console.error('创建 Gist 失败', e);
+    alert('❌ 网络错误，请检查网络连接');
+    return false;
   }
 }
 
 // 配置同步
-function configureSync() {
+async function configureSync() {
   const currentToken = state.githubToken;
   const hasToken = currentToken && currentToken.length > 0;
   
@@ -247,14 +255,12 @@ function configureSync() {
       state.gistId = null; // 重置 Gist ID，会自动创建新的
       saveToStorage();
       
-      // 测试连接
-      alert('🔄 正在测试连接...');
-      createGist().then(() => {
-        if (state.gistId) {
-          alert('✅ 配置成功！\n\n现在可以跨平台自动同步了\n\n所有设备使用相同的 Token 即可');
-          updateSyncStatus();
-        }
-      });
+      // 测试连接（异步）
+      const success = await createGist();
+      if (success) {
+        alert('✅ 配置成功！\n\n现在可以跨平台自动同步了\n\n所有设备使用相同的 Token 即可');
+        updateSyncStatus();
+      }
     }
   }
 }
